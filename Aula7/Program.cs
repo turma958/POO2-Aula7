@@ -1,4 +1,24 @@
-﻿
+﻿var carrinho = new CarrinhoDeCompra();
+carrinho.Add(new Produto
+{
+    CodProduto = Guid.NewGuid(),
+    Descricao = "Puma Slipstram",
+    ValorUnitario = 100,
+    Quantidade = 1
+});
+
+carrinho.Pagar(new PagamentoDebito());
+
+var compra = new Compra
+{
+    CarrinhoDeCompra = carrinho
+};
+compra.CalcularImpostos();
+compra.ImprimirComprovante(new ComprovanteSMS());
+
+Console.ReadLine();
+
+
 class Compra
 {
     private readonly CalculadoraImpostos _calculadoraImpostos;
@@ -13,6 +33,11 @@ class Compra
     public decimal CalcularImpostos()
     {
         return _calculadoraImpostos.CalcularImpostos(CarrinhoDeCompra.ValorTotal);
+    }
+
+    public void ImprimirComprovante(Comprovante comprovante)
+    {
+        comprovante.Imprimir(CarrinhoDeCompra.ValorTotal);
     }
 }
 
@@ -63,14 +88,6 @@ class ICMS : Imposto, IImposto
     public override decimal Porcentagem => 0.15m;
 }
 
-enum TipoPagamento
-{
-    Debito,
-    Credito,
-    Cheque,
-    PIX
-}
-
 enum TipoComprovante
 {
     Online,
@@ -98,44 +115,75 @@ class CarrinhoDeCompra
         });
     }
 
-    public void Pagar(TipoPagamento tipoPagamento)
+    public void Pagar(IPagamento pagamento)
     {
-        switch (tipoPagamento)
-        {
-            case TipoPagamento.Cheque:
-                Console.WriteLine("Pagamento via cheque");
-                break;
-            case TipoPagamento.Credito:
-                Console.WriteLine("Pagamento via crédito");
-                break;
-            case TipoPagamento.Debito:
-                Console.WriteLine("Pagamento via débito");
-                break;
-            case TipoPagamento.PIX:
-                Console.WriteLine("Pagamento via PIX");
-                break;
-            default:
-                throw new Exception("Tipo de pagamento não suportado");
-        }
+        pagamento.Pagar(ValorTotal);
     }
+}
 
-    public void ImprimirComprovante(TipoComprovante tipoComprovante)
+interface IPagamento
+{
+    void Pagar(decimal valor);
+}
+
+class PagamentoCredito : IPagamento
+{
+    public void Pagar(decimal valor)
     {
-        switch (tipoComprovante)
-        {
-            case TipoComprovante.Online:
-                Console.WriteLine("Comprovante online");
-                break;
-            case TipoComprovante.Impresso:
-                Console.WriteLine("Comprovante impresso");
-                break;
-            case TipoComprovante.CupomFiscal:
-                Console.WriteLine("Comprovante cupom fiscal");
-                break;
-            case TipoComprovante.SMS:
-                Console.WriteLine("Comprovante SMS");
-                break;
-        }
+        Console.WriteLine($"Pagamento de {valor} no crédito realizado com sucesso");
+    }
+}
+
+class PagamentoDebito : IPagamento
+{
+    public void Pagar(decimal valor)
+    {
+        Console.WriteLine($"Pagamento de {valor} no débito realizado com sucesso");
+    }
+}
+
+class PagamentoCheque : IPagamento
+{
+    public void Pagar(decimal valor)
+    {
+        Console.WriteLine($"Pagamento de {valor} no cheque realizado com sucesso");
+    }
+}
+
+class PagamentoPIX : IPagamento
+{
+    public void Pagar(decimal valor)
+    {
+        Console.WriteLine($"Pagamento de {valor} no PIX realizado com sucesso");
+    }
+}
+
+abstract class Comprovante
+{
+    public abstract void Imprimir(decimal valor);
+}
+
+class ComprovanteImpresso : Comprovante
+{
+    public override void Imprimir(decimal valor)
+    {
+        Console.WriteLine($"Comprovante impresso {valor}");
+    }
+}
+
+class ComprovanteOnline : Comprovante
+{
+    public override void Imprimir(decimal valor)
+    {
+        Console.WriteLine($"Comprovante online de {valor}");
+    }
+}
+
+class ComprovanteSMS : Comprovante
+{
+    public override void Imprimir(decimal valor)
+    {
+        Console.WriteLine($"Comprovante SMS {valor}");
     }
 }
 
